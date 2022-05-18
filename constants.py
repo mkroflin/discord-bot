@@ -1,6 +1,7 @@
 # Logs are same if uploaded within same delta
 # TODO: find a better metric
 DUPLICATE_DELTA = 10
+MIN_LOG_LENGTH = 2
 
 # MySQL DB information
 DB_HOST = "185.80.92.226"

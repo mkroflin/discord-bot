@@ -18,18 +18,25 @@ class LogBot:
         self.bot.run(self.token)
 
     def prepare_bot(self):
-        @self.bot.commands(name='log')
+        @self.bot.command(name='log')
         async def insert_logs(ctx, *args):
-            botcommands.log_command(ctx, args)
+            await ctx.message.delete()
+            await ctx.send("Inserting logs...")
+            #botcommands.log_command(ctx, args)
+            for log_link in args:
+                print(log_link)
 
-        @self.bot.commands(name='dur')
+            await ctx.send("Done inserting logs")
+
+
+        @self.bot.command(name='dur')
         async def query_duration(ctx, *args):
             pass
 
-        @self.bot.commands(name='dps')
+        @self.bot.command(name='dps')
         async def query_dps(ctx, *args):
             pass
 
-        @self.bot.commands(name='boon')
+        @self.bot.command(name='boon')
         async def query_boon(ctx, *args):
             pass
