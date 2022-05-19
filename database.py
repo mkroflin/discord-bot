@@ -1,5 +1,18 @@
 import constants
 import pymysql
+import time
+
+
+def timeit(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print("{function_name}: {duration:.2f} s".format(function_name=func.__name__, duration=end - start))
+        return result
+
+    return wrapper
+
 
 def weighted_distance(s1, s2):
     s1 = s1.lower()
@@ -22,26 +35,38 @@ def weighted_distance(s1, s2):
                                        d[i][j] + cost))
     return d[-1][-1]
 
-def get_exact_name_id(table, name, cursor):
-    sql = "SELECT ID, short_name FROM {table}".format(table=table)
-    cursor.execute(sql)
-    return sorted([(weighted_distance(name, x['short_name']), x['ID']) for x in cursor.fetchall()])[0][1]
 
+@timeit
+def get_exact_name_id(type, name, cursor):
+    sql = "SELECT ID, name, short_name FROM names WHERE type = '{type}'".format(type=type)
+    cursor.execute(sql)
+    result = sorted([(weighted_distance(name, x['short_name']), x['ID'], x['name'], x['short_name']) for x in cursor.fetchall()])
+    return result[0][1:3]
+
+
+@timeit
 def get_log_by_date(start_date, end_date, cursor):
-    sql = "SELECT id FROM log_table WHERE logDate > '%s' AND logDate < '%s'"
+    sql = "SELECT id FROM log WHERE log.date > '{start}' AND log.date < '{end}'".format(start=start_date, end=end_date)
     cursor.execute(sql)
     return cursor.fetchall()
 
-def get_name_id_by_name(table, value, cursor):
-    sql = "SELECT id from {table} WHERE short_name = '{value}'".format(table=table, value=value)
+
+#@timeit
+def get_name_id_by_name(type, value, cursor):
+    sql = "SELECT id from names WHERE short_name = '{value}' AND type = '{type}'".format(value=value, type=type)
     cursor.execute(sql)
     return cursor.fetchall()
 
-def add_name(table, value, cursor):
-    sql = "INSERT INTO {table} (name, short_name) VALUES ('{value}', '{value}')".format(table=table, var=var, value=value)
+
+#@timeit
+def add_name(type, value, cursor):
+    sql = "INSERT INTO names (name, short_name, type) VALUES ('{value}', '{value}', '{type}')".format(value=value,
+                                                                                                      type=type)
     cursor.execute(sql)
     return cursor.lastrowid
 
+
+#@timeit
 def get_name_id(table, name, cursor):
     name_ids = get_name_id_by_name(table, name, cursor)
     if len(name_ids) == 0:
@@ -49,13 +74,64 @@ def get_name_id(table, name, cursor):
 
     return name_ids[0]['id']
 
+
+@timeit
 def insert_log(log_link, log_date, log_dur, success, boss_name_id, cursor):
-    sql = "INSERT INTO log (link, date, duration, success, boss_name_id) \
-           VALUES ('{link}, {date}, {duration}, {success}, {boss_name_id} \
-           )".format(link=log_link, date=log_date, duration=log_dur, success=success, boss_name_id=boss_name_id)
+    sql = "INSERT INTO log (link, date, duration, success, boss_name_id) " \
+          "VALUES ('{link}', '{date}', {duration}, {success}, {boss_name_id}" \
+          ");".format(link=log_link, date=log_date, duration=log_dur, success=success, boss_name_id=boss_name_id)
 
     cursor.execute(sql)
     return cursor.lastrowid
+
+
+@timeit
+def insert_phases(log_id, phase_name_ids, start_times, end_times, phase_durations, cursor):
+    sql = "INSERT INTO phase (log_id, phase_name_id, start_time, end_time, phase_duration) VALUES "
+    values = ["({}, {}, {}, {}, {})".format(log_id, a, b, c, d) for a, b, c, d in
+              zip(phase_name_ids, start_times, end_times, phase_durations)]
+
+    sql += ",\n".join(values) + ";"
+    cursor.execute(sql)
+    return cursor.lastrowid
+
+
+@timeit
+def insert_players(phase_ids, player_name_ids, class_name_ids, start_dpses, end_dpses, phase_dpses, cursor):
+    sql = "INSERT INTO dps (phase_id, player_name_id, class_name_id, start_dps, end_dps, phase_dps) VALUES "
+    values = values = ["({}, {}, {}, {}, {}, {})".format(a, b, c, d, e, f) for a, b, c, d, e, f in
+                       zip(phase_ids, player_name_ids, class_name_ids, start_dpses, end_dpses, phase_dpses)]
+
+    sql += ",\n".join(values) + ";"
+    cursor.execute(sql)
+    return cursor.lastrowid
+
+@timeit
+def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, cursor):
+    print(boss_name_id, success, phase_name_id, player_name_id, class_name_id)
+    sql_table = "SELECT DISTINCT log.link, phase.phase_duration FROM log\n" \
+                "INNER JOIN phase ON phase.log_id = log.ID\n" \
+                "INNER JOIN dps ON dps.phase_id = phase.ID\n"
+
+    sql_condition = "WHERE log.boss_name_id = {} ".format(boss_name_id)
+    if success:
+        sql_condition += "AND log.success = TRUE\n"
+
+    if phase_name_id != -1:
+        sql_condition += "AND phase.phase_name_id = {}\n".format(phase_name_id)
+
+    if player_name_id != -1:
+        sql_condition += "AND dps.player_name_id = {}\n".format(player_name_id)
+
+    if class_name_id != -1:
+        sql_condition += "AND dps.class_name_id = {}\n".format(class_name_id)
+
+    sql_condition += "ORDER BY phase.phase_duration\n"
+    sql_condition += "LIMIT {} ".format(constants.QUERY_LIMIT)
+    print(sql_table + sql_condition)
+    cursor.execute(sql_table + sql_condition)
+    return cursor.fetchall()
+
 
 def connect():
     db = pymysql.connect(
@@ -69,88 +145,74 @@ def connect():
 
     return db
 
+
 def create_tables(cursor):
     cursor.execute(get_create_log_sql())
-    cursor.execute(get_create_boss_name_sql())
-    cursor.execute(get_create_class_name_sql())
-    cursor.execute(get_create_phase_name_sql())
-    cursor.execute(get_create_player_name_sql())
+    cursor.execute(get_create_names_sql())
     cursor.execute(get_create_phase_sql())
     cursor.execute(get_create_dps_sql())
 
 
-def get_create_boss_name_sql():
-    return "CREATE TABLE IF NOT EXISTS `boss_name` (\
-            `ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,\
-            `name` varchar(30) NOT NULL UNIQUE,\
-            `short_name` varchar(30) NOT NULL UNIQUE\
-            );"
+def drop_tables(cursor):
+    cursor.execute(get_drop_all_sql())
 
 
-def get_create_player_name_sql():
-    return "CREATE TABLE IF NOT EXISTS `player_name` (\
-            `ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,\
-            `name` varchar(30) NOT NULL UNIQUE,\
-            `short_name` varchar(30) NOT NULL\
-            );"
+def get_create_names_sql():
+    return "CREATE TABLE IF NOT EXISTS `names` (" \
+           "`ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT," \
+           "`name` varchar(30) NOT NULL," \
+           "`short_name` varchar(30) NOT NULL," \
+           "`type` varchar(30) NOT NULL," \
+           "UNIQUE(`short_name`, `type`)" \
+           ");"
 
-
-def get_create_phase_name_sql():
-    return "CREATE TABLE IF NOT EXISTS `phase_name` (\
-            `ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,\
-            `name` varchar(30) NOT NULL UNIQUE,\
-            `short_name` varchar(30) NOT NULL\
-            );"
-
-
-def get_create_class_name_sql():
-    return "CREATE TABLE IF NOT EXISTS `class_name` (\
-            `ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,\
-            `name` varchar(30) NOT NULL UNIQUE,\
-            `short_name` varchar(30) NOT NULL\
-            );"
 
 def get_create_dps_sql():
-    return "CREATE TABLE IF NOT EXISTS`dps` (\
-            `ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,\
-            `phase_id` int(11) NOT NULL,\
-            `player_name_id` int(11) NOT NULL,\
-            `class_name_id` int(11) NOT NULL,\
-            `start_dps` int(11) NOT NULL,\
-            `end_dps` int(11) NOT NULL,\
-            `phase_dps` int(11) NOT NULL,\
-            FOREIGN KEY (`player_name_id`) REFERENCES `player_name`(`ID`),\
-            FOREIGN KEY (`class_name_id`) REFERENCES `class_name`(`ID`),\
-            FOREIGN KEY (`phase_name_id`) REFERENCES `phase`(`ID`)\
-            );"
+    return "CREATE TABLE IF NOT EXISTS`dps` (" \
+           "`ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT," \
+           "`phase_id` int(11) NOT NULL," \
+           "`player_name_id` int(11) NOT NULL," \
+           "`class_name_id` int(11) NOT NULL," \
+           "`start_dps` int(11) NOT NULL," \
+           "`end_dps` int(11) NOT NULL," \
+           "`phase_dps` int(11) NOT NULL," \
+           "FOREIGN KEY (`phase_id`) REFERENCES `phase`(`ID`)" \
+           ");"
 
 
 def get_create_phase_sql():
-    return "CREATE TABLE IF NOT EXISTS `phase` (\
-            `ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,\
-            `log_id` int(11) NOT NULL,\
-            `phase_name_id` int(11) NOT NULL,\
-            `start_time` float NOT NULL,\
-            `end_time` float NOT NULL,\
-            `phase_duration` float NOT NULL,\
-            FOREIGN KEY (`phase_name_id`) REFERENCES `phase_name`(`ID`)\
-            );"
+    return "CREATE TABLE IF NOT EXISTS `phase` (" \
+           "`ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT," \
+           "`log_id` int(11) NOT NULL," \
+           "`phase_name_id` int(11) NOT NULL," \
+           "`start_time` float NOT NULL," \
+           "`end_time` float NOT NULL," \
+           "`phase_duration` float NOT NULL" \
+           ");"
 
 
 def get_create_log_sql():
-    return "CREATE TABLE IF NOT EXISTS `log` (\
-            `ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT,\
-            `link` varchar(50) NOT NULL,\
-            `date` datetime NOT NULL,\
-            `duration` float NOT NULL,\
-            `success` tinyint(1) NOT NULL,\
-            `boss_name_id` int(11) NOT NULL,\
-            FOREIGN KEY (`boss_name_id`) REFERENCES `boss_name`(`ID`)\
-            );"
+    return "CREATE TABLE IF NOT EXISTS `log` (" \
+           "`ID` int(11) PRIMARY KEY NOT NULL AUTO_INCREMENT," \
+           "`link` varchar(50) NOT NULL," \
+           "`date` datetime NOT NULL," \
+           "`duration` float NOT NULL," \
+           "`success` tinyint(1) NOT NULL," \
+           "`boss_name_id` int(11) NOT NULL" \
+           ");"
+
+
+def get_drop_all_sql():
+    return "DROP TABLE IF EXISTS names;" \
+           "DROP TABLE IF EXISTS class_name;" \
+           "DROP TABLE IF EXISTS dps;" \
+           "DROP TABLE IF EXISTS log;" \
+           "DROP TABLE IF EXISTS phase;"
 
 
 if __name__ == '__main__':
     db = connect()
     cursor = db.cursor()
+    # drop_tables(cursor)
     create_tables(cursor)
     db.commit()
