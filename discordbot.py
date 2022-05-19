@@ -35,7 +35,10 @@ class LogBot:
 
         @self.bot.command(name='dps')
         async def query_dps(ctx, *args):
-            pass
+            await ctx.send("Calculating...")
+            query, result = botcommands.dps_command(ctx, args)
+            await ctx.send("QUERY PARAMTERS: {}".format(query))
+            await ctx.send(result)
 
         @self.bot.command(name='boon')
         async def query_boon(ctx, *args):

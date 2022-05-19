@@ -74,6 +74,10 @@ def get_name_id(table, name, cursor):
 
     return name_ids[0]['id']
 
+def get_name_by_id(id, cursor):
+    sql = "SELECT short_name FROM names WHERE ID = {}".format(id)
+    cursor.execute(sql)
+    return cursor.fetchall()[0]["short_name"]
 
 @timeit
 def insert_log(log_link, log_date, log_dur, success, boss_name_id, cursor):
@@ -108,7 +112,6 @@ def insert_players(phase_ids, player_name_ids, class_name_ids, start_dpses, end_
 
 @timeit
 def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, cursor):
-    print(boss_name_id, success, phase_name_id, player_name_id, class_name_id)
     sql_table = "SELECT DISTINCT log.link, phase.phase_duration FROM log\n" \
                 "INNER JOIN phase ON phase.log_id = log.ID\n" \
                 "INNER JOIN dps ON dps.phase_id = phase.ID\n"
@@ -127,6 +130,32 @@ def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, 
         sql_condition += "AND dps.class_name_id = {}\n".format(class_name_id)
 
     sql_condition += "ORDER BY phase.phase_duration\n"
+    sql_condition += "LIMIT {} ".format(constants.QUERY_LIMIT)
+    print(sql_table + sql_condition)
+    cursor.execute(sql_table + sql_condition)
+    return cursor.fetchall()
+
+
+@timeit
+def get_data_for_dps(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dps_type, cursor):
+    sql_table = "SELECT DISTINCT log.link, dps.{}, dps.player_name_id, dps.class_name_id FROM log\n" \
+                "INNER JOIN phase ON phase.log_id = log.ID\n" \
+                "INNER JOIN dps ON dps.phase_id = phase.ID\n".format(dps_type)
+
+    sql_condition = "WHERE log.boss_name_id = {} ".format(boss_name_id)
+    if success:
+        sql_condition += "AND log.success = TRUE\n"
+
+    if phase_name_id != -1:
+        sql_condition += "AND phase.phase_name_id = {}\n".format(phase_name_id)
+
+    if player_name_id != -1:
+        sql_condition += "AND dps.player_name_id = {}\n".format(player_name_id)
+
+    if class_name_id != -1:
+        sql_condition += "AND dps.class_name_id = {}\n".format(class_name_id)
+
+    sql_condition += "ORDER BY dps.{} DESC ".format(dps_type)
     sql_condition += "LIMIT {} ".format(constants.QUERY_LIMIT)
     print(sql_table + sql_condition)
     cursor.execute(sql_table + sql_condition)

@@ -1,3 +1,4 @@
 discord~=1.7.3
 PyMySQL~=1.0.2
 requests~=2.27.1
+numpy~=1.22.3
