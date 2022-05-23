@@ -1,4 +1,6 @@
 import sys
+import dotenv
+
 
 def get_discord_token():
     with open('DISCORD_TOKEN.txt', 'r', encoding = 'utf-8') as f:

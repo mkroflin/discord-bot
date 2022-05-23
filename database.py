@@ -1,7 +1,7 @@
 import constants
 import pymysql
 import time
-
+import os
 
 def timeit(func):
     def wrapper(*args, **kwargs):
@@ -203,6 +203,7 @@ def get_data_for_dps(boss_name_id, success, phase_name_id, player_name_id, class
 
 
 def connect():
+
     db = pymysql.connect(
         host=constants.DB_HOST,
         user=constants.DB_USERNAME,
