@@ -105,16 +105,9 @@ def insert_log(log_data):
 
 
 if __name__ == '__main__':
-    # log_data = get_log_data('https://dps.report/lz95-20220518-000311_void')
     log_data = get_log_data('https://dps.report/7n3H-20220509-204715_matt')
     with open('test.json', 'w', encoding='utf-8') as f:
        f.write(json.dumps(log_data, separators=(',', ':')))
 
     tmp = log_data['graphData']['phases'][0]['players'][0]['damage']['targets'][0]
 
-    print(tmp[-1])
-    print(len(tmp))
-    #log_date, log_time, success, boss_name = get_log_info(log_data)
-    #get_phase_info(log_data, success)
-    #phase_names, start_times, end_times, phase_durations = get_phase_info(log_data, success)
-    #print(phase_names, phase_durations)

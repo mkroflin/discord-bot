@@ -40,7 +40,8 @@ def weighted_distance(s1, s2):
 def get_exact_name_id(type, name, cursor):
     sql = "SELECT ID, name, short_name FROM names WHERE type = '{type}'".format(type=type)
     cursor.execute(sql)
-    result = sorted([(weighted_distance(name, x['short_name']), x['ID'], x['name'], x['short_name']) for x in cursor.fetchall()])
+    result = sorted(
+        [(weighted_distance(name, x['short_name']), x['ID'], x['name'], x['short_name']) for x in cursor.fetchall()])
     return result[0][1:3]
 
 
@@ -51,33 +52,73 @@ def get_log_by_date(start_date, end_date, cursor):
     return cursor.fetchall()
 
 
-#@timeit
+# @timeit
 def get_name_id_by_name(type, value, cursor):
     sql = "SELECT id from names WHERE short_name = '{value}' AND type = '{type}'".format(value=value, type=type)
     cursor.execute(sql)
     return cursor.fetchall()
 
 
-#@timeit
-def add_name(type, value, cursor):
-    sql = "INSERT INTO names (name, short_name, type) VALUES ('{value}', '{value}', '{type}')".format(value=value,
-                                                                                                      type=type)
+# @timeit
+def add_name(type, name, short_name, cursor):
+    sql = "INSERT INTO names (name, short_name, type) " \
+          "VALUES ('{name}', '{short_name}', '{type}')".format(name=name,
+                                                               short_name=short_name,
+                                                               type=type)
     cursor.execute(sql)
     return cursor.lastrowid
 
 
-#@timeit
+def get_names_by_name(type, name, cursor):
+    sql = "SELECT name, short_name FROM names WHERE type = '{}' ".format(type)
+    if name != "ALL":
+        sql += "AND name = '{}' ".format(name)
+
+    sql += "LIMIT {}".format(constants.QUERY_LIMIT)
+    cursor.execute(sql)
+    return cursor.fetchall()
+
+
+def get_names_by_short_name(type, short_name, cursor):
+    sql = "SELECT name, short_name FROM names WHERE type = '{}' " \
+          "AND short_name = '{}'".format(type, short_name)
+
+    cursor.execute(sql)
+    return cursor.fetchall()
+
+
+def update_name(type, name, short_name, cursor):
+    short_names = get_names_by_short_name(type, short_name, cursor)
+    if len(short_names) != 0:
+        return short_names[0]["name"]
+
+    names = get_names_by_name(type, name, cursor)
+    if not names:
+        add_name(type, name, short_name, cursor)
+    else:
+        sql = "UPDATE names SET short_name = '{short_name}' " \
+              "WHERE type = '{type}' AND name = '{name}'".format(name=name,
+                                                                 short_name=short_name,
+                                                                 type=type)
+        cursor.execute(sql)
+
+    return short_name
+
+
+# @timeit
 def get_name_id(table, name, cursor):
     name_ids = get_name_id_by_name(table, name, cursor)
     if len(name_ids) == 0:
-        return add_name(table, name, cursor)
+        return add_name(table, name, name, cursor)
 
     return name_ids[0]['id']
+
 
 def get_name_by_id(id, cursor):
     sql = "SELECT short_name FROM names WHERE ID = {}".format(id)
     cursor.execute(sql)
     return cursor.fetchall()[0]["short_name"]
+
 
 @timeit
 def insert_log(log_link, log_date, log_dur, success, boss_name_id, cursor):
@@ -110,6 +151,7 @@ def insert_players(phase_ids, player_name_ids, class_name_ids, start_dpses, end_
     cursor.execute(sql)
     return cursor.lastrowid
 
+
 @timeit
 def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, cursor):
     sql_table = "SELECT DISTINCT log.link, phase.phase_duration FROM log\n" \
@@ -131,7 +173,6 @@ def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, 
 
     sql_condition += "ORDER BY phase.phase_duration\n"
     sql_condition += "LIMIT {} ".format(constants.QUERY_LIMIT)
-    print(sql_table + sql_condition)
     cursor.execute(sql_table + sql_condition)
     return cursor.fetchall()
 
@@ -157,7 +198,6 @@ def get_data_for_dps(boss_name_id, success, phase_name_id, player_name_id, class
 
     sql_condition += "ORDER BY dps.{} DESC ".format(dps_type)
     sql_condition += "LIMIT {} ".format(constants.QUERY_LIMIT)
-    print(sql_table + sql_condition)
     cursor.execute(sql_table + sql_condition)
     return cursor.fetchall()
 
