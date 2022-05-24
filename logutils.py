@@ -102,12 +102,3 @@ def insert_log(log_data):
     log_class = log_data['players'][0]['condi'] > 0
     boss_name = log_data['fightName']
     return log_date, log_dur, log_class, success, boss_name
-
-
-if __name__ == '__main__':
-    log_data = get_log_data('https://dps.report/7n3H-20220509-204715_matt')
-    with open('test.json', 'w', encoding='utf-8') as f:
-       f.write(json.dumps(log_data, separators=(',', ':')))
-
-    tmp = log_data['graphData']['phases'][0]['players'][0]['damage']['targets'][0]
-

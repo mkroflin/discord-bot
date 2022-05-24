@@ -3,6 +3,7 @@ import pymysql
 import time
 import os
 
+
 def timeit(func):
     def wrapper(*args, **kwargs):
         start = time.time()
@@ -36,7 +37,6 @@ def weighted_distance(s1, s2):
     return d[-1][-1]
 
 
-@timeit
 def get_exact_name_id(type, name, cursor):
     sql = "SELECT ID, name, short_name FROM names WHERE type = '{type}'".format(type=type)
     cursor.execute(sql)
@@ -52,14 +52,12 @@ def get_log_by_date(start_date, end_date, cursor):
     return cursor.fetchall()
 
 
-# @timeit
 def get_name_id_by_name(type, value, cursor):
     sql = "SELECT id from names WHERE short_name = '{value}' AND type = '{type}'".format(value=value, type=type)
     cursor.execute(sql)
     return cursor.fetchall()
 
 
-# @timeit
 def add_name(type, name, short_name, cursor):
     sql = "INSERT INTO names (name, short_name, type) " \
           "VALUES ('{name}', '{short_name}', '{type}')".format(name=name,
@@ -105,7 +103,6 @@ def update_name(type, name, short_name, cursor):
     return short_name
 
 
-# @timeit
 def get_name_id(table, name, cursor):
     name_ids = get_name_id_by_name(table, name, cursor)
     if len(name_ids) == 0:
@@ -202,18 +199,15 @@ def get_data_for_dps(boss_name_id, success, phase_name_id, player_name_id, class
     return cursor.fetchall()
 
 
-def connect():
-
-    db = pymysql.connect(
-        host=constants.DB_HOST,
-        user=constants.DB_USERNAME,
-        password=constants.DB_PASSWORD,
-        database=constants.DB_NAME,
+def connect(config):
+    return pymysql.connect(
+        host=config["DB_HOST"],
+        user=config["DB_USERNAME"],
+        password=config["DB_PASSWORD"],
+        database=config["DB_NAME"],
         charset="utf8mb4",
         cursorclass=pymysql.cursors.DictCursor
     )
-
-    return db
 
 
 def create_tables(cursor):
@@ -278,11 +272,3 @@ def get_drop_all_sql():
            "DROP TABLE IF EXISTS dps;" \
            "DROP TABLE IF EXISTS log;" \
            "DROP TABLE IF EXISTS phase;"
-
-
-if __name__ == '__main__':
-    db = connect()
-    cursor = db.cursor()
-    # drop_tables(cursor)
-    create_tables(cursor)
-    db.commit()

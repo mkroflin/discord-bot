@@ -1,3 +1,5 @@
+import dotenv
+
 import database
 import constants
 import logutils
@@ -118,8 +120,7 @@ def get_dps_with_params(params, flags, cursor):
     return query, result
 
 
-def log_command(args):
-    db = database.connect()
+def log_command(args, db):
     cursor = db.cursor()
     for i in range(1, len(args), 1):
         upload_log(args[i], cursor)
@@ -137,7 +138,7 @@ def is_valid_args(args):
     return True
 
 
-def dur_command(ctx, args):
+def dur_command(ctx, args, db):
     if not is_valid_args(args):
         ctx.send("Input parameters were wrong. Check that you have a flag followed by value.")
         return
@@ -148,12 +149,11 @@ def dur_command(ctx, args):
         ctx.send("Boss parameter was not given.")
         return
 
-    db = database.connect()
     cursor = db.cursor()
     return get_duration_with_params(params, flags, cursor)
 
 
-def dps_command(ctx, args):
+def dps_command(ctx, args, db):
     if not is_valid_args(args):
         ctx.send("Input parameters were wrong. Check that you have a flag followed by value.")
         return
@@ -164,7 +164,6 @@ def dps_command(ctx, args):
         ctx.send("Boss parameter was not given.")
         return
 
-    db = database.connect()
     cursor = db.cursor()
     return get_dps_with_params(params, flags, cursor)
 
@@ -179,7 +178,7 @@ def flag_command():
            "-c class_name"
 
 
-def alias_command(args):
+def alias_command(args, db):
     name_types = {
         "-b": "boss",
         "-pl": "player",
@@ -191,7 +190,6 @@ def alias_command(args):
     if len(args) > 3:
         return "You gave too many arguments. Make sure to use quotation marks when name contains more than 1 word"
 
-    db = database.connect()
     cursor = db.cursor()
 
     if len(args) == 3:
@@ -212,22 +210,3 @@ def alias_command(args):
     return "List of alias for {}:\n{}".format(name, "\n".join(["Name: {} Alias: {}".format(x["name"],
                                                                                            x["short_name"]) for x in
                                                                all_names]))
-
-def help_command(args):
-    supported_commands = ["dps", "alias", "help", ""]
-
-    if len(args) == 0:
-        return "Use $help <command> for more information on how to use the commands. Currently " \
-               "supported commands are $dps $dur $log and $alias"
-
-    if len(args) > 1:
-        return "You gave too many arguments. Please give only one argument (command) for which " \
-               "you need help for"
-
-
-if __name__ == '__main__':
-    log_link = 'https://dps.report/WSCj-20220509-204835_matt'
-    db = database.connect()
-    cursor = db.cursor()
-    upload_log(log_link, cursor)
-    db.close()

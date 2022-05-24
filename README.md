@@ -19,8 +19,6 @@ Available types are ```full```, ```start``` and ```end```. Each command-type has
 filters and parameters. 
 
 ## TODO
-- Portability
-  - use .env variables instead of importing constants.py
 - Add queries on boons
 - Run the bot on a remote server
   - Add docker files
