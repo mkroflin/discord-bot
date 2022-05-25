@@ -6,7 +6,10 @@
     2. DPS at start/end of phase
 
 ## Commands
-To list all commands use `$help`. Template for a command is
+### Inserting logs
+To insert logs use the command `$log` and then a list of logs separated whitespace.
+### Queries 
+Current commands in use are `$dps` and `$dur` both of which are used with the following form
 ```
 $command -b [boss] -p [phase] -t [type] -c [class] -pl [player]
 ```
@@ -14,9 +17,20 @@ where each template has different mandatory/optional arguments depending on the 
 1. ```dps -b skor -p "Phase 3" -t full -c ren -pl Tantor``` will give skorvald logs sorted by phase 3 dps for renegade played by Tantor
 2. ```dur -b skor -p "Phase 2" -t start``` will give skorvald logs sorted by start of Phase 2
 
-All arguments except ```type``` will be partially matched. This is because ```type``` is a specific flag that indicates which segment you want to inspect relative to the phase.
-Available types are ```full```, ```start``` and ```end```. Each command-type has it's own required arguments and optional arguments. Optional arguments are only additional output
-filters and parameters. 
+If names contain more than one word, they have to be given in quotation marks for example `"Vale Guardian"`. All arguments except ```type``` will be partially matched. This is because ```type``` is a specific flag that indicates which segment you want to inspect relative to the phase.
+Available types are ```full```, ```start``` and ```end```. 
+### Alias
+Names and short names for each player, class and boss are stored and can be changed by using `$alias` command. There are
+3 types of queries for this command:
+```
+$alias <type>
+$alias <type> <full_name>
+$alias <type> <full_name> <new_short_name>
+```
+The first one will list all full and short names for that type of name where type is one of the flags `-b, -c, -pl`. 
+The second one lists the current full and short name for that full name.
+The last one updates the short_name (if it is not taken). Names are matched by short name so this is a way to make 
+queries easier to write.
 
 ## Setup and run the bot
 First install requirements by using `$ pip install -r requirements.txt` and then create an `.env` file where your DB and Discord token info will be stored. File should contain 
