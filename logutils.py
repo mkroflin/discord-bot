@@ -77,7 +77,6 @@ def get_player_dps_info(log_data, phase_ind, player_ind, start, end):
     phase_dps = phase_damage / phase_dur
     return player_name, class_name, start_dps, end_dps, phase_dps
 
-
 def get_player_info(log_data, start_times, end_times, phase_inds, last_phase_id):
     player_names = []
     class_names = []
@@ -88,6 +87,9 @@ def get_player_info(log_data, start_times, end_times, phase_inds, last_phase_id)
     for i, phase_id, start, end in zip(phase_inds, range(last_phase_id, last_phase_id + len(start_times)), start_times, end_times):
         for player_id in range(len(log_data['players'])):
             player_name, class_name, start_dps, end_dps, phase_dps = get_player_dps_info(log_data, i, player_id, start, end)
+            if player_name.lower() in constants.SPECIAL_PLAYERS:
+                continue
+
             player_names.append(player_name)
             class_names.append(class_name)
             start_dpses.append(start_dps)

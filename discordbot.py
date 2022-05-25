@@ -23,7 +23,7 @@ class LogBot:
     def prepare_bot(self):
         @self.bot.command(name='log', help='Import list of logs (separated by whitespace)')
         async def insert_logs(ctx, *args):
-            await ctx.message.delete()
+            # await ctx.message.delete()
             await ctx.send("Inserting logs...")
             botcommands.log_command(args, self.db)
             await ctx.send("Done inserting logs")
@@ -32,15 +32,21 @@ class LogBot:
         async def query_duration(ctx, *args):
             await ctx.send("Calculating...")
             query, result = botcommands.dur_command(ctx, args, self.db)
-            await ctx.send("QUERY PARAMTERS: {}".format(query))
-            await ctx.send(result)
+            if query:
+                await ctx.send("QUERY PARAMTERS: {}".format(query))
+                await ctx.send(result)
+            else:
+                await ctx.send(result)
 
         @self.bot.command(name='dps', help='Query boss phases by dps or start/end dps of a phase')
         async def query_dps(ctx, *args):
             await ctx.send("Calculating...")
             query, result = botcommands.dps_command(ctx, args, self.db)
-            await ctx.send("QUERY PARAMTERS: {}".format(query))
-            await ctx.send(result)
+            if query:
+                await ctx.send("QUERY PARAMTERS: {}".format(query))
+                await ctx.send(result)
+            else:
+                await ctx.send(result)
 
         @self.bot.command(name='flags', help='List of all possible flags to use across other commands')
         async def query_flags(ctx, *args):

@@ -24,6 +24,7 @@ def upload_log(log_link, cursor):
     log_data = logutils.get_log_data(log_link)
     log_date, log_dur, success, boss_name = logutils.get_log_info(log_data)
     if float(log_dur) < constants.MIN_LOG_LENGTH or logutils.is_duplicate(log_data, cursor):
+        print("Log is duplicate or too short")
         return
 
     boss_name_id = database.get_name_id("boss", boss_name, cursor)
@@ -107,7 +108,7 @@ def get_dps_with_params(params, flags, cursor):
     player_name_id = -1
     player_name = ""
     if "-pl" in flags:
-        player_name_id, player_name = database.get_exact_name_id("player", params["-p"], cursor)
+        player_name_id, player_name = database.get_exact_name_id("player", params["-pl"], cursor)
 
     class_name_id = -1
     class_name = ""
@@ -139,7 +140,6 @@ def log_command(args, db):
         print("Uploaded log: {}".format(args[i]))
         if i % 5 == 0:
             db.commit()
-    db.close()
 
 
 def is_valid_args(args):
@@ -152,14 +152,12 @@ def is_valid_args(args):
 
 def dur_command(ctx, args, db):
     if not is_valid_args(args):
-        ctx.send("Input parameters were wrong. Check that you have a flag followed by value.")
-        return
+        return "", "Input parameters were wrong. Check that you have a flag followed by value."
 
     params = convert_input(args)
     flags = params.keys()
     if "-b" not in flags:
-        ctx.send("Boss parameter was not given.")
-        return
+        return "", "Boss parameter was not given."
 
     cursor = db.cursor()
     return get_duration_with_params(params, flags, cursor)
@@ -167,14 +165,12 @@ def dur_command(ctx, args, db):
 
 def dps_command(ctx, args, db):
     if not is_valid_args(args):
-        ctx.send("Input parameters were wrong. Check that you have a flag followed by value.")
-        return
+        return "", "Input parameters were wrong. Check that you have a flag followed by value."
 
     params = convert_input(args)
     flags = params.keys()
     if "-b" not in flags:
-        ctx.send("Boss parameter was not given.")
-        return
+        return "", "Boss parameter was not given."
 
     cursor = db.cursor()
     return get_dps_with_params(params, flags, cursor)
