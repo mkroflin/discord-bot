@@ -1,4 +1,6 @@
 import dotenv
+import pymysql
+import requests
 
 import database
 import constants
@@ -21,6 +23,10 @@ def get_name_ids(type, names, cursor):
 
 @database.timeit
 def upload_log(log_link, cursor):
+    if logutils.log_link_exists(log_link, cursor):
+        print("Log is duplicate")
+        return
+
     log_data = logutils.get_log_data(log_link)
     log_date, log_dur, success, boss_name = logutils.get_log_info(log_data)
     if float(log_dur) < constants.MIN_LOG_LENGTH or logutils.is_duplicate(log_data, cursor):
@@ -60,8 +66,7 @@ def get_duration_with_params(params, flags, cursor):
 
     boss_name_id, boss_name = database.get_exact_name_id("boss", params["-b"], cursor)
 
-    phase_name_id = database.get_exact_name_id("phase", "Full Fight", cursor)
-    phase_name = ""
+    phase_name_id, phase_name = database.get_exact_name_id("phase", "Full Fight", cursor)
     success = True
     if "-p" in flags:
         phase_name_id, phase_name = database.get_exact_name_id("phase", params["-p"], cursor)
@@ -98,8 +103,7 @@ def get_dps_with_params(params, flags, cursor):
 
     boss_name_id, boss_name = database.get_exact_name_id("boss", params["-b"], cursor)
 
-    phase_name_id = database.get_exact_name_id("phase", "Full Fight", cursor)
-    phase_name = ""
+    phase_name_id, phase_name = database.get_exact_name_id("phase", "Full Fight", cursor)
     success = True
     if "-p" in flags:
         phase_name_id, phase_name = database.get_exact_name_id("phase", params["-p"], cursor)
@@ -133,13 +137,36 @@ def get_dps_with_params(params, flags, cursor):
     return query, result
 
 
-def log_command(args, db):
+def log_command(args, config):
+    db = database.connect(config)
     cursor = db.cursor()
-    for i in range(1, len(args), 1):
-        upload_log(args[i], cursor)
-        print("Uploaded log: {}".format(args[i]))
-        if i % 5 == 0:
-            db.commit()
+    for i, log_link in enumerate(args[1:-1]):
+
+        try:
+            upload_log(log_link, cursor)
+            print("Uploaded log: {}".format(log_link))
+            if i % 5 == 0 or i + 1 == len(args[1:-1]):
+                db.commit()
+
+        except requests.exceptions.ConnectionError as e:
+            print("Error when requesting log: ", e)
+            with open("failed_logs.txt", "a") as f:
+                f.write(log_link + "\n")
+
+        except pymysql.Error as e:
+            print("Error with DB transaction ", e)
+            print("Reconnecting to DB...")
+            db = database.connect(config)
+            cursor = db.cursor()
+            with open("failed_logs.txt", "a") as f:
+                f.write(log_link + "\n")
+        except Exception as e:
+            print("Error occurred when uploading log: ", e)
+            with open("failed_logs.txt", "a") as f:
+                f.write(log_link + "\n")
+
+    cursor.close()
+    db.close()
 
 
 def is_valid_args(args):
@@ -150,7 +177,8 @@ def is_valid_args(args):
     return True
 
 
-def dur_command(ctx, args, db):
+def dur_command(ctx, args, config):
+    print("Calling dur command with params ", args)
     if not is_valid_args(args):
         return "", "Input parameters were wrong. Check that you have a flag followed by value."
 
@@ -159,11 +187,16 @@ def dur_command(ctx, args, db):
     if "-b" not in flags:
         return "", "Boss parameter was not given."
 
+    db = database.connect(config)
     cursor = db.cursor()
-    return get_duration_with_params(params, flags, cursor)
+    result = get_duration_with_params(params, flags, cursor)
+    cursor.close()
+    db.cursor()
+    return result
 
 
-def dps_command(ctx, args, db):
+def dps_command(ctx, args, config):
+    print("Calling dps command with params ", args)
     if not is_valid_args(args):
         return "", "Input parameters were wrong. Check that you have a flag followed by value."
 
@@ -172,8 +205,12 @@ def dps_command(ctx, args, db):
     if "-b" not in flags:
         return "", "Boss parameter was not given."
 
+    db = database.connect(config)
     cursor = db.cursor()
-    return get_dps_with_params(params, flags, cursor)
+    result = get_dps_with_params(params, flags, cursor)
+    cursor.close()
+    db.close()
+    return result
 
 
 def flag_command():
@@ -186,7 +223,8 @@ def flag_command():
            "-c class_name"
 
 
-def alias_command(args, db):
+def alias_command(args, config):
+    print("Calling alias command with params ", args)
     name_types = {
         "-b": "boss",
         "-pl": "player",
@@ -198,6 +236,7 @@ def alias_command(args, db):
     if len(args) > 3:
         return "You gave too many arguments. Make sure to use quotation marks when name contains more than 1 word"
 
+    db = database.connect(config)
     cursor = db.cursor()
 
     if len(args) == 3:
@@ -215,6 +254,8 @@ def alias_command(args, db):
         name = args[1]
 
     all_names = database.get_names_by_name(name_types[args[0]], name, cursor)
-    return "List of alias for {}:\n{}".format(name, "\n".join(["Name: {} Alias: {}".format(x["name"],
+    cursor.close()
+    db.close()
+    return "List of alias for {}:\n{}".format(name, "\n".join(["Name: {}\tAlias: {}".format(x["name"],
                                                                                            x["short_name"]) for x in
                                                                all_names]))

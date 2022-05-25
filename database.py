@@ -51,8 +51,14 @@ def get_log_by_date(start_date, end_date, cursor):
     return cursor.fetchall()
 
 
+def get_log_by_link(log_link, cursor):
+    sql = "SELECT id FROM log WHERE log.link = '{}'".format(log_link)
+    cursor.execute(sql)
+    return cursor.fetchall()
+
+
 def get_name_id_by_name(type, value, cursor):
-    sql = "SELECT id from names WHERE short_name = '{value}' AND type = '{type}'".format(value=value, type=type)
+    sql = "SELECT id from names WHERE name = '{value}' AND type = '{type}'".format(value=value, type=type)
     cursor.execute(sql)
     return cursor.fetchall()
 
@@ -72,7 +78,6 @@ def get_names_by_name(type, name, cursor):
         sql += "AND name = '{}' ".format(name)
 
     sql += "LIMIT {}".format(constants.QUERY_LIMIT)
-    print(sql)
     cursor.execute(sql)
     return cursor.fetchall()
 

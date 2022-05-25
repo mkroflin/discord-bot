@@ -8,9 +8,7 @@ class LogBot:
         print("INITIATING BOT...")
         self.bot = commands.Bot(command_prefix="$")
         self.token = config["DISCORD_TOKEN"]
-        print("Connecting to DB")
-        self.db = database.connect(config)
-        print("Connected to DB")
+        self.config = config
         self.prepare_bot()
 
     def run(self):
@@ -25,13 +23,13 @@ class LogBot:
         async def insert_logs(ctx, *args):
             # await ctx.message.delete()
             await ctx.send("Inserting logs...")
-            botcommands.log_command(args, self.db)
+            botcommands.log_command(args, self.config)
             await ctx.send("Done inserting logs")
 
         @self.bot.command(name='dur', help='Query boss phases by duration or start/end of a phase')
         async def query_duration(ctx, *args):
             await ctx.send("Calculating...")
-            query, result = botcommands.dur_command(ctx, args, self.db)
+            query, result = botcommands.dur_command(ctx, args, self.config)
             if query:
                 await ctx.send("QUERY PARAMTERS: {}".format(query))
                 await ctx.send(result)
@@ -41,7 +39,7 @@ class LogBot:
         @self.bot.command(name='dps', help='Query boss phases by dps or start/end dps of a phase')
         async def query_dps(ctx, *args):
             await ctx.send("Calculating...")
-            query, result = botcommands.dps_command(ctx, args, self.db)
+            query, result = botcommands.dps_command(ctx, args, self.config)
             if query:
                 await ctx.send("QUERY PARAMTERS: {}".format(query))
                 await ctx.send(result)
@@ -58,4 +56,9 @@ class LogBot:
 
         @self.bot.command(name='alias', help='Look up and change alias for names')
         async def query_alias(ctx, *args):
-            await ctx.send(botcommands.alias_command(args, self.db))
+            await ctx.send(botcommands.alias_command(args, self.config))
+
+        @self.bot.command()
+        @commands.is_owner()
+        async def shutdown(context):
+            exit()

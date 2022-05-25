@@ -4,9 +4,10 @@ import constants
 import json
 import requests
 import re
-import numpy
-import math
 
+
+def log_link_exists(log_link, cursor):
+    return len(database.get_log_by_link(log_link, cursor)) > 0
 
 def is_duplicate(log_data, cursor):
     log_date = datetime.datetime.strptime(log_data['encounterStart'], '%Y-%m-%d %H:%M:%S %z')
@@ -15,6 +16,7 @@ def is_duplicate(log_data, cursor):
     return len(database.get_log_by_date(log_date - t_range, log_date + t_range, cursor)) > 0
 
 
+@database.timeit
 def get_log_data(link):
     request_http_full = requests.get(link)
     source = request_http_full.text
