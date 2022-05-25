@@ -51,6 +51,12 @@ def upload_log(log_link, cursor):
 
 @database.timeit
 def get_duration_with_params(params, flags, cursor):
+    dur_types = {
+        "start": "start_time",
+        "end": "end_time",
+        "full": "phase_duration"
+    }
+
     boss_name_id, boss_name = database.get_exact_name_id("boss", params["-b"], cursor)
 
     phase_name_id = database.get_exact_name_id("phase", "Full Fight", cursor)
@@ -70,8 +76,13 @@ def get_duration_with_params(params, flags, cursor):
     if "-pl" in flags:
         class_name_id, class_name = database.get_exact_name_id("player", params["-p"], cursor)
 
-    logs = database.get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, cursor)
-    query = " ".join([boss_name, phase_name, player_name, class_name])
+    dur_type = "phase_duration"
+    if "-t" in flags and params["-t"] in dur_types.keys():
+        dur_type = dur_types[params["-t"]]
+
+    logs = database.get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dur_type,
+                                          cursor)
+    query = " ".join([boss_name, dur_type, " of ", phase_name, player_name, class_name])
     result = "\n".join(["{log} Phase duration: {pd}".format(log=r["link"], pd=r["phase_duration"]) for r in logs])
     return query, result
 
@@ -104,11 +115,12 @@ def get_dps_with_params(params, flags, cursor):
         class_name_id, class_name = database.get_exact_name_id("class", params["-c"], cursor)
 
     dps_type = "phase_dps"
-    if "-t" in flags and params["-t"] in dps_types.values():
+    if "-t" in flags and params["-t"] in dps_types.keys():
         dps_type = dps_types[params["-t"]]
 
     logs = database.get_data_for_dps(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dps_type,
                                      cursor)
+
     query = " ".join([boss_name, dps_type, "of", phase_name, player_name, class_name])
     result = "\n".join(["{log} {player} {class_name} DPS: {dps}".format(log=r["link"],
                                                                         dps=r[dps_type],

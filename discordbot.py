@@ -8,8 +8,10 @@ class LogBot:
         print("INITIATING BOT...")
         self.bot = commands.Bot(command_prefix="$")
         self.token = config["DISCORD_TOKEN"]
-        self.prepare_bot()
+        print("Connecting to DB")
         self.db = database.connect(config)
+        print("Connected to DB")
+        self.prepare_bot()
 
     def run(self):
         @self.bot.event

@@ -1,5 +1,5 @@
 # TODO: find a better metric
-DUPLICATE_DELTA = 5
+DUPLICATE_DELTA = 0
 MIN_LOG_LENGTH = 2
 QUERY_LIMIT = 20
 

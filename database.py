@@ -73,6 +73,7 @@ def get_names_by_name(type, name, cursor):
         sql += "AND name = '{}' ".format(name)
 
     sql += "LIMIT {}".format(constants.QUERY_LIMIT)
+    print(sql)
     cursor.execute(sql)
     return cursor.fetchall()
 
@@ -150,7 +151,7 @@ def insert_players(phase_ids, player_name_ids, class_name_ids, start_dpses, end_
 
 
 @timeit
-def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, cursor):
+def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dur_type, cursor):
     sql_table = "SELECT DISTINCT log.link, phase.phase_duration FROM log\n" \
                 "INNER JOIN phase ON phase.log_id = log.ID\n" \
                 "INNER JOIN dps ON dps.phase_id = phase.ID\n"
@@ -168,7 +169,7 @@ def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, 
     if class_name_id != -1:
         sql_condition += "AND dps.class_name_id = {}\n".format(class_name_id)
 
-    sql_condition += "ORDER BY phase.phase_duration\n"
+    sql_condition += "ORDER BY phase.{} ASC\n".format(dur_type)
     sql_condition += "LIMIT {} ".format(constants.QUERY_LIMIT)
     cursor.execute(sql_table + sql_condition)
     return cursor.fetchall()
