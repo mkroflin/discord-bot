@@ -1,7 +1,6 @@
 import constants
 import pymysql
 import time
-import os
 
 
 def timeit(func):
@@ -40,12 +39,12 @@ def weighted_distance(s1, s2):
 def get_exact_name_id(type, name, cursor):
     sql = "SELECT ID, name, short_name FROM names WHERE type = '{type}'".format(type=type)
     cursor.execute(sql)
+    all_names = cursor.fetchall()
     result = sorted(
-        [(weighted_distance(name, x['short_name']), x['ID'], x['name'], x['short_name']) for x in cursor.fetchall()])
+        [(weighted_distance(name, x['short_name']), x['ID'], x['name'], x['short_name']) for x in all_names])
     return result[0][1:3]
 
 
-@timeit
 def get_log_by_date(start_date, end_date, cursor):
     sql = "SELECT id FROM log WHERE log.date > '{start}' AND log.date < '{end}'".format(start=start_date, end=end_date)
     cursor.execute(sql)
@@ -152,9 +151,9 @@ def insert_players(phase_ids, player_name_ids, class_name_ids, start_dpses, end_
 
 @timeit
 def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dur_type, cursor):
-    sql_table = "SELECT DISTINCT log.link, phase.phase_duration FROM log\n" \
+    sql_table = "SELECT DISTINCT log.link, phase.{} FROM log\n" \
                 "INNER JOIN phase ON phase.log_id = log.ID\n" \
-                "INNER JOIN dps ON dps.phase_id = phase.ID\n"
+                "INNER JOIN dps ON dps.phase_id = phase.ID\n".format(dur_type)
 
     sql_condition = "WHERE log.boss_name_id = {} ".format(boss_name_id)
     if success:

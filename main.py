@@ -10,6 +10,8 @@ def import_and_validate_env_variables():
             print("Missing {} in .env file. Please add it".format(key))
             exit(1)
 
+    config["DISCORD_TOKEN"] = config[config["DISCORD_TOKEN"]]
+
     return config
 
 

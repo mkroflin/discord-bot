@@ -61,20 +61,20 @@ def get_duration_with_params(params, flags, cursor):
 
     phase_name_id = database.get_exact_name_id("phase", "Full Fight", cursor)
     phase_name = ""
-    success = False
+    success = True
     if "-p" in flags:
         phase_name_id, phase_name = database.get_exact_name_id("phase", params["-p"], cursor)
-        success = 0
+        success = False
 
     player_name_id = -1
     player_name = ""
     if "-pl" in flags:
-        player_name_id, player_name = database.get_exact_name_id("player", params["-p"], cursor)
+        player_name_id, player_name = database.get_exact_name_id("player", params["-pl"], cursor)
 
     class_name_id = -1
     class_name = ""
-    if "-pl" in flags:
-        class_name_id, class_name = database.get_exact_name_id("player", params["-p"], cursor)
+    if "-c" in flags:
+        class_name_id, class_name = database.get_exact_name_id("class", params["-c"], cursor)
 
     dur_type = "phase_duration"
     if "-t" in flags and params["-t"] in dur_types.keys():
@@ -83,7 +83,7 @@ def get_duration_with_params(params, flags, cursor):
     logs = database.get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dur_type,
                                           cursor)
     query = " ".join([boss_name, dur_type, " of ", phase_name, player_name, class_name])
-    result = "\n".join(["{log} Phase duration: {pd}".format(log=r["link"], pd=r["phase_duration"]) for r in logs])
+    result = "\n".join(["{log} Time: {pd}".format(log=r["link"], pd=r[dur_type]) for r in logs])
     return query, result
 
 
@@ -99,10 +99,10 @@ def get_dps_with_params(params, flags, cursor):
 
     phase_name_id = database.get_exact_name_id("phase", "Full Fight", cursor)
     phase_name = ""
-    success = False
+    success = True
     if "-p" in flags:
         phase_name_id, phase_name = database.get_exact_name_id("phase", params["-p"], cursor)
-        success = 0
+        success = False
 
     player_name_id = -1
     player_name = ""

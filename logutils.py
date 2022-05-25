@@ -35,6 +35,12 @@ def get_log_info(log_data):
     return log_date, log_dur, success, boss_name_id
 
 
+def get_last_phase(phases):
+    for phase in reversed(phases):
+        if not phase['breakbarPhase']:
+            return phase
+
+
 def get_phase_info(log_data, success):
     phase_names = []
     start_times = []
@@ -48,7 +54,7 @@ def get_phase_info(log_data, success):
 
         phase_name = phase['name']
         start = phase['start']
-        end = 10000 if not success and phase == log_data['phases'][-1] else phase['end']
+        end = 10000 if not success and phase == get_last_phase(log_data['phases']) else phase['end']
         phase_names.append(phase_name)
         start_times.append(start)
         end_times.append(end)
