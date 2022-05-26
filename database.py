@@ -36,6 +36,15 @@ def weighted_distance(s1, s2):
     return d[-1][-1]
 
 
+def get_name_id_by_similarity(type, name, n, cursor):
+    sql = "SELECT ID, name, short_name FROM names WHERE type = '{type}'".format(type=type)
+    cursor.execute(sql)
+    all_names = cursor.fetchall()
+    result = sorted(
+        [(weighted_distance(name, x['short_name']), x['ID'], x['name'], x['short_name']) for x in all_names])
+    return result[:n]
+
+
 def get_exact_name_id(type, name, cursor):
     sql = "SELECT ID, name, short_name FROM names WHERE type = '{type}'".format(type=type)
     cursor.execute(sql)

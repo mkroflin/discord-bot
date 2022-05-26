@@ -249,13 +249,13 @@ def alias_command(args, config):
 
         return "Alias {} already exists for {}. Please choose a different alias".format(args[2], updated_name)
 
-    name = "ALL"
+    name = ""
     if len(args) == 2:
         name = args[1]
 
-    all_names = database.get_names_by_name(name_types[args[0]], name, cursor)
+    all_names = database.get_name_id_by_similarity(name_types[args[0]], name, constants.QUERY_LIMIT, cursor)
     cursor.close()
     db.close()
-    return "List of alias for {}:\n{}".format(name, "\n".join(["Name: {}\tAlias: {}".format(x["name"],
-                                                                                           x["short_name"]) for x in
+    return "List of alias for {}:\n{}".format(name, "\n".join(["Name: {}\tAlias: {}".format(x[2],
+                                                                                            x[3]) for x in
                                                                all_names]))
