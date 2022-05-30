@@ -155,7 +155,7 @@ def insert_phases(log_id, phase_name_ids, start_times, end_times, phase_duration
 @timeit
 def insert_players(phase_ids, player_name_ids, class_name_ids, start_dpses, end_dpses, phase_dpses, cursor):
     sql = "INSERT INTO dps (phase_id, player_name_id, class_name_id, start_dps, end_dps, phase_dps) VALUES "
-    values = values = ["({}, {}, {}, {}, {}, {})".format(a, b, c, d, e, f) for a, b, c, d, e, f in
+    values = ["({}, {}, {}, {}, {}, {})".format(a, b, c, d, e, f) for a, b, c, d, e, f in
                        zip(phase_ids, player_name_ids, class_name_ids, start_dpses, end_dpses, phase_dpses)]
 
     sql += ",\n".join(values) + ";"
@@ -164,7 +164,7 @@ def insert_players(phase_ids, player_name_ids, class_name_ids, start_dpses, end_
 
 
 @timeit
-def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dur_type, cursor):
+def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dur_type, date, cursor):
     sql_table = "SELECT DISTINCT log.link, phase.{} FROM log\n" \
                 "INNER JOIN phase ON phase.log_id = log.ID\n" \
                 "INNER JOIN dps ON dps.phase_id = phase.ID\n".format(dur_type)
@@ -182,14 +182,18 @@ def get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, 
     if class_name_id != -1:
         sql_condition += "AND dps.class_name_id = {}\n".format(class_name_id)
 
+    if date:
+        sql_condition += "AND log.date > {}\n".format(date)
+
     sql_condition += "ORDER BY phase.{} ASC\n".format(dur_type)
     sql_condition += "LIMIT {} ".format(constants.QUERY_LIMIT)
+    print(sql_table + sql_condition)
     cursor.execute(sql_table + sql_condition)
     return cursor.fetchall()
 
 
 @timeit
-def get_data_for_dps(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dps_type, cursor):
+def get_data_for_dps(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dps_type, date, cursor):
     sql_table = "SELECT DISTINCT log.link, dps.{}, dps.player_name_id, dps.class_name_id FROM log\n" \
                 "INNER JOIN phase ON phase.log_id = log.ID\n" \
                 "INNER JOIN dps ON dps.phase_id = phase.ID\n".format(dps_type)
@@ -207,8 +211,12 @@ def get_data_for_dps(boss_name_id, success, phase_name_id, player_name_id, class
     if class_name_id != -1:
         sql_condition += "AND dps.class_name_id = {}\n".format(class_name_id)
 
+    if date:
+        sql_condition += "AND log.date > {}\n".format(date)
+
     sql_condition += "ORDER BY dps.{} DESC ".format(dps_type)
     sql_condition += "LIMIT {} ".format(constants.QUERY_LIMIT)
+    print(sql_table + sql_condition)
     cursor.execute(sql_table + sql_condition)
     return cursor.fetchall()
 

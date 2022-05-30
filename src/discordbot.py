@@ -1,6 +1,5 @@
 from discord.ext import commands
 import botcommands
-import database
 
 
 class LogBot:

@@ -11,14 +11,22 @@ To insert logs use the command `$log` and then a list of logs separated whitespa
 ### Queries 
 Current commands in use are `$dps` and `$dur` both of which are used with the following form
 ```
-$command -b [boss] -p [phase] -t [type] -c [class] -pl [player]
+$command -b [boss] -p [phase] -t [type] -c [class] -pl [player] -d [date]
 ```
 where each template has different mandatory/optional arguments depending on the command itself. Bellow you can see for each command-type (```dps```, ```dur```, ```boon̨̨```)
 1. ```dps -b skor -p "Phase 3" -t full -c ren -pl Tantor``` will give skorvald logs sorted by phase 3 dps for renegade played by Tantor
 2. ```dur -b skor -p "Phase 2" -t start``` will give skorvald logs sorted by start of Phase 2
 
 If names contain more than one word, they have to be given in quotation marks for example `"Vale Guardian"`. All arguments except ```type``` will be partially matched. This is because ```type``` is a specific flag that indicates which segment you want to inspect relative to the phase.
-Available types are ```full```, ```start``` and ```end```. 
+Available types are ```full```, ```start``` and ```end```. For the date flag, you can either give a date (ISO format) or 
+an expression of the form `[num][short]`. Number expressed the amount of shorts you want and short is one of the following
+```
+d days
+w weeks
+m months
+p patches
+```
+Example: `2d` represents logs not older than 2 days.
 ### Alias
 Names and short names for each player, class and boss are stored and can be changed by using `$alias` command. There are
 3 types of queries for this command:

@@ -1,4 +1,3 @@
-import dotenv
 import pymysql
 import requests
 
@@ -86,11 +85,35 @@ def get_duration_with_params(params, flags, cursor):
     if "-t" in flags and params["-t"] in dur_types.keys():
         dur_type = dur_types[params["-t"]]
 
-    logs = database.get_data_for_duration(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dur_type,
-                                          cursor)
+    date = ""
+    if "-d" in flags:
+        date = transform_date(params["-d"])
+
+    logs = database.get_data_for_duration(boss_name_id,
+                                          success,
+                                          phase_name_id,
+                                          player_name_id,
+                                          class_name_id,
+                                          dur_type,
+                                          date,
+                                          cursor, )
     query = " ".join([boss_name, dur_type, " of ", phase_name, player_name, class_name])
     result = "\n".join(["{log} Time: {pd}".format(log=r["link"], pd=r[dur_type]) for r in logs])
     return query, result
+
+
+def transform_date(date):
+    segments = {"w": "WEEK",
+                "d": "DAY",
+                "m": "MONTH"}
+
+    if date[1] == "p":
+        return "'{}'".format(constants.PATCH_DATES[int(date[0])])
+
+    if date[1] in segments.keys():
+        return "now() - INTERVAL {} {}".format(date[0], segments[date[1]])
+
+    return "'{}'".format(date)
 
 
 @database.timeit
@@ -123,8 +146,18 @@ def get_dps_with_params(params, flags, cursor):
     if "-t" in flags and params["-t"] in dps_types.keys():
         dps_type = dps_types[params["-t"]]
 
-    logs = database.get_data_for_dps(boss_name_id, success, phase_name_id, player_name_id, class_name_id, dps_type,
-                                     cursor)
+    date = ""
+    if "-d" in flags:
+        date = transform_date(params["-d"])
+
+    logs = database.get_data_for_dps(boss_name_id,
+                                     success,
+                                     phase_name_id,
+                                     player_name_id,
+                                     class_name_id,
+                                     dps_type,
+                                     date,
+                                     cursor, )
 
     query = " ".join([boss_name, dps_type, "of", phase_name, player_name, class_name])
     result = "\n".join(["{log} {player} {class_name} DPS: {dps}".format(log=r["link"],
@@ -145,12 +178,12 @@ def log_command(args, config):
         try:
             upload_log(log_link, cursor)
             print("Uploaded log: {}".format(log_link))
-            if i % 5 == 0 or i + 1 == len(args[1:-1]):
+            if i % 5 == 0 or i == len(args):
                 db.commit()
 
         except requests.exceptions.ConnectionError as e:
             print("Error when requesting log: ", e)
-            with open("failed_logs.txt", "a") as f:
+            with open("../resources/failed_logs.txt", "a") as f:
                 f.write(log_link + "\n")
 
         except pymysql.Error as e:
@@ -158,11 +191,12 @@ def log_command(args, config):
             print("Reconnecting to DB...")
             db = database.connect(config)
             cursor = db.cursor()
-            with open("failed_logs.txt", "a") as f:
+            with open("../resources/failed_logs.txt", "a") as f:
                 f.write(log_link + "\n")
+
         except Exception as e:
             print("Error occurred when uploading log: ", e)
-            with open("failed_logs.txt", "a") as f:
+            with open("../resources/failed_logs.txt", "a") as f:
                 f.write(log_link + "\n")
 
     cursor.close()

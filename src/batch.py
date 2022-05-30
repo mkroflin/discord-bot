@@ -7,8 +7,8 @@ import pandas
 import dotenv
 
 if __name__ == '__main__':
-    fl = pandas.read_csv(r"log.csv")
-    config = dotenv.dotenv_values(".env")
+    fl = pandas.read_csv(r"../resources/log.csv")
+    config = dotenv.dotenv_values("../resources/.env")
     db = database.connect(config)
     print("Connected to db...")
     cursor = db.cursor()
@@ -23,18 +23,18 @@ if __name__ == '__main__':
 
         except requests.exceptions.ConnectionError as e:
             print("Error when requesting log: ", e)
-            with open("failed_logs.txt", "a") as f:
+            with open("../resources/failed_logs.txt", "a") as f:
                 f.write(log_link + "\n")
         except pymysql.Error as e:
             print("Error with DB transaction ", e)
             print("Reconnecting to DB...")
             db = database.connect(config)
             cursor = db.cursor()
-            with open("failed_logs.txt", "a") as f:
+            with open("../resources/failed_logs.txt", "a") as f:
                 f.write(log_link + "\n")
         except Exception as e:
             print("Error occurred when uploading log: ", e)
-            with open("failed_logs.txt", "a") as f:
+            with open("../resources/failed_logs.txt", "a") as f:
                 f.write(log_link + "\n")
 
     print("Done")
