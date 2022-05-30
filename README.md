@@ -55,11 +55,7 @@ my_token_name = my_discord_token
 The recursive token naming allow you to have multiple tokens stored and by renaming the variable `DISCORD_TOKEN` you can switch between them. 
 After this is done, you can run the bot by running the main script `python main.py`.
 ## TODO
-- Configurable tables
 - Add queries on boons
-- Run the bot on a remote server
-  - Add docker files
-  - Deploy CI/CD with Github and a (free) Cloud service
 - Code optimizations
   - Optimize deconstruction of data
   - Optimize DB calls
