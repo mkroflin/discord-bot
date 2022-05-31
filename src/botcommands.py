@@ -1,9 +1,7 @@
 import pymysql
 import requests
 
-import database
-import constants
-import logutils
+from src import database, constants, logutils
 
 
 def convert_input(args):
@@ -199,6 +197,7 @@ def log_command(args, config):
             with open("../resources/failed_logs.txt", "a") as f:
                 f.write(log_link + "\n")
 
+    db.commit()
     cursor.close()
     db.close()
 
