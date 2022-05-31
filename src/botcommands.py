@@ -254,7 +254,8 @@ def flag_command():
            "-b boss_name, mandatory for dps and dur commands\n" \
            "-pl player_name\n" \
            "-p phase_name (full_name), 'Full Fight' [default]\n" \
-           "-c class_name"
+           "-c class_name\n" \
+           "-d date"
 
 
 def alias_command(args, config):
