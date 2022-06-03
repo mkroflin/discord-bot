@@ -30,7 +30,7 @@ class LogBot:
             await ctx.send("Calculating...")
             query, result = botcommands.dur_command(ctx, args, self.config)
             if query:
-                await ctx.send("QUERY PARAMTERS: {}".format(query))
+                await ctx.send("QUERY PARAMETERS: {}".format(query))
                 await ctx.send(result)
             else:
                 await ctx.send(result)
@@ -40,7 +40,7 @@ class LogBot:
             await ctx.send("Calculating...")
             query, result = botcommands.dps_command(ctx, args, self.config)
             if query:
-                await ctx.send("QUERY PARAMTERS: {}".format(query))
+                await ctx.send("QUERY PARAMETERS: {}".format(query))
                 await ctx.send(result)
             else:
                 await ctx.send(result)
