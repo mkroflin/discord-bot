@@ -53,69 +53,13 @@ def upload_log(log_link, cursor):
     database.insert_players(phase_ids, player_name_ids, class_name_ids, start_dpses, end_dpses, phase_dpses, cursor)
 
 
-@database.timeit
-def get_duration_with_params(params, flags, cursor):
+def get_param_values(params, flags, cursor):
     dur_types = {
         "start": "start_time",
         "end": "end_time",
         "full": "phase_duration"
     }
 
-    boss_name_id, boss_name = database.get_exact_name_id("boss", params["-b"], cursor)
-
-    phase_name_id, phase_name = database.get_exact_name_id("phase", "Full Fight", cursor)
-    success = True
-    if "-p" in flags:
-        phase_name_id, phase_name = database.get_exact_name_id("phase", params["-p"], cursor)
-        success = False
-
-    player_name_id = -1
-    player_name = ""
-    if "-pl" in flags:
-        player_name_id, player_name = database.get_exact_name_id("player", params["-pl"], cursor)
-
-    class_name_id = -1
-    class_name = ""
-    if "-c" in flags:
-        class_name_id, class_name = database.get_exact_name_id("class", params["-c"], cursor)
-
-    dur_type = "phase_duration"
-    if "-t" in flags and params["-t"] in dur_types.keys():
-        dur_type = dur_types[params["-t"]]
-
-    date = ""
-    if "-d" in flags:
-        date = transform_date(params["-d"])
-
-    logs = database.get_data_for_duration(boss_name_id,
-                                          success,
-                                          phase_name_id,
-                                          player_name_id,
-                                          class_name_id,
-                                          dur_type,
-                                          date,
-                                          cursor, )
-    query = " ".join([boss_name, dur_type, " of ", phase_name, player_name, class_name])
-    result = "\n".join(["{log} Time: {pd}".format(log=r["link"], pd=r[dur_type]) for r in logs])
-    return query, result
-
-
-def transform_date(date):
-    segments = {"w": "WEEK",
-                "d": "DAY",
-                "m": "MONTH"}
-
-    if date[1] == "p":
-        return "'{}'".format(constants.PATCH_DATES[int(date[0])])
-
-    if date[1] in segments.keys():
-        return "now() - INTERVAL {} {}".format(date[0], segments[date[1]])
-
-    return "'{}'".format(date)
-
-
-@database.timeit
-def get_dps_with_params(params, flags, cursor):
     dps_types = {
         "start": "start_dps",
         "end": "end_dps",
@@ -140,26 +84,82 @@ def get_dps_with_params(params, flags, cursor):
     if "-c" in flags:
         class_name_id, class_name = database.get_exact_name_id("class", params["-c"], cursor)
 
+    dur_type = "phase_duration"
     dps_type = "phase_dps"
-    if "-t" in flags and params["-t"] in dps_types.keys():
+    if "-t" in flags and params["-t"] in dur_types.keys():
+        dur_type = dur_types[params["-t"]]
         dps_type = dps_types[params["-t"]]
 
     date = ""
     if "-d" in flags:
         date = transform_date(params["-d"])
 
-    logs = database.get_data_for_dps(boss_name_id,
-                                     success,
-                                     phase_name_id,
-                                     player_name_id,
-                                     class_name_id,
-                                     dps_type,
-                                     date,
+    return {
+        "boss_name": boss_name,
+        "boss_name_id": boss_name_id,
+        "success": success,
+        "phase_name": phase_name,
+        "phase_name_id": phase_name_id,
+        "player_name": player_name,
+        "player_name_id": player_name_id,
+        "class_name": class_name,
+        "class_name_id": class_name_id,
+        "dur_type": dur_type,
+        "dps_type": dps_type,
+        "date": date,
+    }
+
+
+@database.timeit
+def get_duration_with_params(params, flags, cursor):
+    param_values = get_param_values(params, flags, cursor)
+
+    logs = database.get_data_for_duration(param_values["boss_name_id"],
+                                          param_values["success"],
+                                          param_values["phase_name_id"],
+                                          param_values["player_name_id"],
+                                          param_values["class_name_id"],
+                                          param_values["dur_type"],
+                                          param_values["date"],
+                                          cursor, )
+
+    logs = filter(lambda log: log[param_values["dur_type"]] < 9000, logs)
+    query = " ".join([param_values["boss_name"], param_values["dur_type"], " of ", param_values["phase_name"],
+                      param_values["player_name"], param_values["class_name"]])
+    result = "\n".join(["{log} Time: {pd}".format(log=r["link"], pd=r[param_values["dur_type"]]) for r in logs])
+    return query, result
+
+
+def transform_date(date):
+    segments = {"w": "WEEK",
+                "d": "DAY",
+                "m": "MONTH"}
+
+    if date[1] == "p":
+        return "'{}'".format(constants.PATCH_DATES[int(date[0])])
+
+    if date[1] in segments.keys():
+        return "now() - INTERVAL {} {}".format(date[0], segments[date[1]])
+
+    return "'{}'".format(date)
+
+@database.timeit
+def get_dps_with_params(params, flags, cursor):
+    param_values = get_param_values(params, flags, cursor)
+    logs = database.get_data_for_dps(param_values["boss_name_id"],
+                                     param_values["success"],
+                                     param_values["phase_name_id"],
+                                     param_values["player_name_id"],
+                                     param_values["class_name_id"],
+                                     param_values["dps_type"],
+                                     param_values["date"],
                                      cursor, )
 
-    query = " ".join([boss_name, dps_type, "of", phase_name, player_name, class_name])
+    logs = filter(lambda log: log[param_values["dps_type"]] > 0, logs)
+    query = " ".join([param_values["boss_name"], param_values["dps_type"], " of ", param_values["phase_name"],
+                      param_values["player_name"], param_values["class_name"]])
     result = "\n".join(["{log} {player} {class_name} DPS: {dps}".format(log=r["link"],
-                                                                        dps=r[dps_type],
+                                                                        dps=r[param_values["dps_type"]],
                                                                         player=database.get_name_by_id(
                                                                             r["player_name_id"], cursor),
                                                                         class_name=database.get_name_by_id(
