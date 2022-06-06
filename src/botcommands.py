@@ -5,16 +5,16 @@ from src import database, constants, logutils
 
 
 def convert_input(args):
-    input = dict()
+    result = dict()
     for i in range(0, len(args), 2):
-        input[args[i]] = args[i + 1]
+        result[args[i]] = args[i + 1]
 
-    return input
+    return result
 
 
 @database.timeit
-def get_name_ids(type, names, cursor):
-    unique_names = {x: database.get_name_id(type, x, cursor) for x in set(names)}
+def get_name_ids(table, names, cursor):
+    unique_names = {x: database.get_name_id(table, x, cursor) for x in set(names)}
     return [unique_names[x] for x in names]
 
 
@@ -142,6 +142,7 @@ def transform_date(date):
         return "now() - INTERVAL {} {}".format(date[0], segments[date[1]])
 
     return "'{}'".format(date)
+
 
 @database.timeit
 def get_dps_with_params(params, flags, cursor):
