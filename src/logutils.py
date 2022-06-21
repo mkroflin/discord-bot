@@ -1,6 +1,5 @@
-import database
+from src import database, constants
 import datetime
-import constants
 import json
 import requests
 import re
